@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+bear_sync/__init__.py
+bear_sync/main.py
+bear_sync/sync.py
+bear_sync.egg-info/PKG-INFO
+bear_sync.egg-info/SOURCES.txt
+bear_sync.egg-info/dependency_links.txt
+bear_sync.egg-info/entry_points.txt
+bear_sync.egg-info/requires.txt
+bear_sync.egg-info/top_level.txt

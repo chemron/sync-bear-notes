@@ -1,12 +1,10 @@
-#!/usr/bin/python3
-
-import sqlite3
-from pathlib import Path
-from datetime import datetime, timedelta
-from dataclasses import dataclass
 import os
-from collections import defaultdict
 import shutil
+import sqlite3
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from pathlib import Path
 
 
 @dataclass

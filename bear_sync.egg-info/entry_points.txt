@@ -1,0 +1,2 @@
+[console_scripts]
+bear-sync = bear_sync.main:main

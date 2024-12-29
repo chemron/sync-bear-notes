@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages]
+find = {}
+
+[project]
+name = "bear-sync"
+version = "0.0.1"
+dependencies = [
+    "click>=8.1.8",
+    'importlib-metadata; python_version>="3.12"',
+]
+
+[project.scripts]
+bear-sync = "bear_sync.main:main"

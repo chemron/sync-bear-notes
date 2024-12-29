@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: bear-sync
+Version: 0.0.1
+License-File: LICENSE
+Requires-Dist: click>=8.1.8
+Requires-Dist: importlib-metadata; python_version >= "3.12"
