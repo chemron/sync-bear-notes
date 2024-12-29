@@ -1,5 +1,4 @@
 import os
-import shutil
 import sqlite3
 from collections import defaultdict
 from dataclasses import dataclass
@@ -17,7 +16,7 @@ class Note:
     modification_date: datetime
 
 
-DB_PATH = (
+DEFAULT_DB_PATH = (
     Path.home()
     / "Library"
     / "Group Containers"
@@ -26,34 +25,10 @@ DB_PATH = (
     / "database.sqlite"
 )
 
-NOTES_PATH = Path.home() / "Notes" / "note_sync"
-try:
-    shutil.rmtree(NOTES_PATH)
-except FileNotFoundError:
-    pass
-
 
 class BearDB:
-    # Tables in Bear database
-    # ZSFCHANGE
-    # ZSFCHANGEITEM
-    # ZSFEXTERNALCHANGES
-    # ZSFINTERNALCHANGES
-    # ZSFNOTE Z_PK, ZTITLE: title, ZTEXT: text , ZTRASHED: trashed 1/0,
-    #   ZMODIFICATIONDATE: seconds since 2001-01-01, ZCREATIONDATE: seconds since 2001-01-01
-    # Z_5TAGS Z_5NOTES: note pk, Z_13TAGS: tag pk
-    # ZSFNOTEBACKLINK
-    # ZSFNOTEFILE
-    # ZSFNOTEFILESERVERDATA
-    # ZSFNOTESERVERDATA
-    # ZSFNOTETAG   z_pk , ZTITLE: tag - parent_tag/child_tag is distinct from parent_tag
-    # ZSFPASSWORD
-    # ZSFSERVERMETADATA
-    # Z_PRIMARYKEY
-    # Z_METADATA
-    # Z_MODELCACHE
 
-    def __init__(self, db_path):
+    def __init__(self, db_path: Path):
         self.con = sqlite3.connect(db_path)
         self.cursor = self.con.cursor()
 
@@ -88,7 +63,7 @@ class BearDB:
     def __core_date_time_to_datetime(self, core_date_time):
         return datetime(2001, 1, 1) + timedelta(seconds=int(core_date_time))
 
-    def save_notes(self, path):
+    def save_notes(self, path: Path, overwrite=False):
         notes = defaultdict(list)
         for (
             title,
@@ -118,6 +93,10 @@ class BearDB:
                 )
             )
 
+        # notes with the same tag and title are ordered by creation date
+
+        notes_synced = 0
+        notes_skipped = 0
         for (tag, title), note_set in notes.items():
             base_path = path / tag
 
@@ -132,9 +111,17 @@ class BearDB:
 
                 file_name = f"{note.title.replace('/', '_')}{suffix}.md"
                 file_path = base_path / file_name
-                with open(file_path, "w") as f:
-                    print(f"Writing {file_path}")
-                    f.write(text)
+
+                if not file_path.exists() or overwrite:
+                    with open(file_path, "w") as f:
+                        print(f"Writing {file_path}")
+                        f.write(text)
+                        notes_synced += 1
+                else:
+                    print(f"{file_path} already exists. Skipping.")
+                    notes_skipped += 1
+
+        print(f"Synced {notes_synced} notes. Skipped {notes_skipped} notes.")
 
     def get_non_trashed_notes(self):
         notes = self.raw_notes()
@@ -144,8 +131,18 @@ class BearDB:
         self.con.close()
 
 
-def sync(output_dir: str, overwrite: bool):
+def sync(
+    output_path: Path,
+    db_path: Path = DEFAULT_DB_PATH,
+    overwrite: bool = False,
+    remove_existing: bool = False,
+):
+    if remove_existing:
+        for path in output_path.glob("**/*.md"):
+            print("Deleting ", path)
+            path.unlink()
+
     # Connect to Bear database
-    db = BearDB(DB_PATH)
-    db.save_notes(Path(output_dir))
+    db = BearDB(db_path)
+    db.save_notes(Path(output_path), overwrite)
     db.dissconnect()
