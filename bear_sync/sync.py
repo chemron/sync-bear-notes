@@ -133,6 +133,7 @@ class BearDB:
                 file_name = f"{note.title.replace('/', '_')}{suffix}.md"
                 file_path = base_path / file_name
                 with open(file_path, "w") as f:
+                    print(f"Writing {file_path}")
                     f.write(text)
 
     def get_non_trashed_notes(self):
@@ -143,7 +144,8 @@ class BearDB:
         self.con.close()
 
 
-# Connect to Bear database
-db = BearDB(DB_PATH)
-db.save_notes(NOTES_PATH)
-db.dissconnect()
+def sync(output_dir: str, overwrite: bool):
+    # Connect to Bear database
+    db = BearDB(DB_PATH)
+    db.save_notes(Path(output_dir))
+    db.dissconnect()
