@@ -12,6 +12,8 @@ dependencies = [
     "click>=8.1.8",
     'importlib-metadata; python_version>="3.12"',
 ]
+description="Sync notes from Bear to a local directory"
+readme="README.md"
 
 [project.scripts]
 bear-sync = "bear_sync.main:main"

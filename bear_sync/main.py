@@ -8,11 +8,11 @@ from bear_sync.sync import DEFAULT_DB_PATH, sync
 
 @click.command()
 @click.argument("output-dir", type=str)
-@click.option("--db-dir", type=str, help="Path to Bear's database directory")
+@click.option("--db-dir", type=str, help="Path to Bear's database directory.")
 @click.option(
     "--overwrite",
     is_flag=True,
-    help="Overwrite existing markdown files with the same name",
+    help="Overwrite existing markdown files with the same name.",
 )
 @click.option(
     "--remove-existing",
