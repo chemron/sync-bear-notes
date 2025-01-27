@@ -1,13 +1,13 @@
 # Bear Sync
 
-This is a small python package to sync notes from [Bear](https://bear.app/) to a local directory as markdown files.
+This is a small python package to export notes from [Bear](https://bear.app/) to a local directory as markdown files.
 
 ## Installation
 
 via [pip](https://pip.pypa.io/en/stable/installation/):
 
 ```bash
-pip install git+https://github.com/chemron/sync-bear-notes.git
+pip install bear-sync
 ```
 
 ## Usage
@@ -49,4 +49,38 @@ bear_sync_folder/
 │   │   ├── My Bear Document.md
 ├── tag2/
 |   ├── My Bear Document.md
+```
+
+## Example - using bear-sync with git
+
+Setup a new git repository:
+
+```bash
+mkdir bear_notes
+cd bear_notes
+git init
+```
+
+Create a shell script to sync the bear notes:
+
+```bash
+cat <<EOF > bear_sync.sh
+NOTES_PATH="$HOME/bear_notes"
+
+bear-sync --overwrite --remove-existing "$NOTES_PATH"
+git -C "$NOTES_PATH" add .
+git -C "$NOTES_PATH" commit -m "notes backup: $(date)"
+EOF
+```
+
+Give the new script execution permissions:
+
+```bash
+chmod +x ./bear_sync.sh
+```
+
+Run!
+
+```bash
+./bear_sync.sh
 ```
