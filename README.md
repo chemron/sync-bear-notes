@@ -25,3 +25,28 @@ Options:
 `--overwrite`: Overwrite existing markdown files with the same name.
 
 `--remove-existing`: Remove existing markdown files before syncing. WARNING: This will delete all markdown files in output-dir.
+
+## Behaviour
+
+This package attempts to mimic the behaviour of bear with a directory structure. At the moment, this results some duplication of files.
+If you have a document in bear like follows:
+
+```text
+# My Bear Document
+
+#tag/subtag #tag2
+
+This is my bear document.
+```
+
+then the resulting directory structure will be:
+
+```text
+bear_sync_folder/
+├── tag/
+|   ├── My Bear Document.md
+│   ├── subtag/
+│   │   ├── My Bear Document.md
+├── tag2/
+|   ├── My Bear Document.md
+```
