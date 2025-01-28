@@ -7,10 +7,9 @@ from pathlib import Path
 
 
 @dataclass
-class Note:
+class RawNote:
+    raw_path: Path
     title: str
-    tag: str
-    trashed: bool
     text: str
     creation_date: datetime
     modification_date: datetime
@@ -40,21 +39,32 @@ class BearDB:
     def raw_notes(self):
         query = """
         SELECT
-            ZSFNOTE.ZTITLE AS title,
-            ZSFNOTETAG.ZTITLE AS tag,
-            ZSFNOTE.ZTRASHED AS trashed,
-            ZSFNOTE.ZTEXT AS text,
+            Z_PK AS note_id,
+            ZTITLE AS title,
+            ZTRASHED AS trashed,
+            ZTEXT AS text,
             ZCREATIONDATE AS creation_date,
-            ZSFNOTE.ZMODIFICATIONDATE AS modification_date
+            ZMODIFICATIONDATE AS modification_date
         FROM
             ZSFNOTE
-        LEFT JOIN
-            Z_5TAGS ON ZSFNOTE.Z_PK = Z_5TAGS.Z_5NOTES
+        ORDER BY
+            creation_date ASC;
+        """
+        self.cursor.execute(query)
+        res = self.cursor.fetchall()
+        return res
+
+    def raw_tags(self):
+        query = """
+        SELECT
+            Z_5TAGS.Z_5NOTES AS note_id,
+            ZSFNOTETAG.ZTITLE AS tag,
+        FROM
+            Z_5TAGS
         LEFT JOIN
             ZSFNOTETAG ON Z_5TAGS.Z_13TAGS = ZSFNOTETAG.Z_PK
         ORDER BY
-            LENGTH(tag),
-            creation_date ASC;
+            LENGTH(tag);
         """
         self.cursor.execute(query)
         res = self.cursor.fetchall()
@@ -63,45 +73,58 @@ class BearDB:
     def __core_date_time_to_datetime(self, core_date_time):
         return datetime(2001, 1, 1) + timedelta(seconds=int(core_date_time))
 
-    def save_notes(self, path: Path, overwrite=False):
-        notes = defaultdict(list)
+    def save_notes(self, base_path: Path, overwrite=False):
+        raw_notes = self.raw_notes()
+        raw_tags = self.raw_tags()
+        raw_note_dir = base_path / ".raw_notes"
+        os.makedirs(raw_note_dir, exist_ok=True)
+
+        id_to_raw_note = {}
         for (
+            note_id,
             title,
-            tag,
             trashed,
             text,
             creation_date,
             modification_date,
-        ) in self.raw_notes():
+        ) in raw_notes:
             if trashed or (not text):
                 continue
-            if not tag:
-                tag = "untagged"
-            if not title:
-                title = "untitled"
-
-            notes[(tag, title)].append(
-                Note(
+            note_path = raw_note_dir / f"{note_id}.md"
+            if not note_path.exists() or overwrite:
+                with open(note_path, "w") as f:
+                    f.write(text)
+                id_to_raw_note[note_id] = RawNote(
+                    raw_path=note_path,
                     title=title,
-                    tag=tag,
-                    trashed=trashed,
-                    text=text,
+                    text=text or "untitled",
                     creation_date=self.__core_date_time_to_datetime(creation_date),
                     modification_date=self.__core_date_time_to_datetime(
                         modification_date
                     ),
                 )
-            )
+
+        tagged_notes = {note_id for note_id, _ in raw_tags}
+        untagged_notes = [
+            (note_id, "untagged")
+            for note_id in id_to_raw_note
+            if note_id not in tagged_notes
+        ]
+
+        # group notes by tag and title
+        notes = defaultdict(list)
+        for note_id, tag in raw_tags + untagged_notes:
+            notes[(tag, title)].append(note_id)
 
         # notes with the same tag and title are ordered by creation date
-
         notes_synced = 0
         notes_skipped = 0
-        for (tag, title), note_set in notes.items():
-            base_path = path / tag
+        for (tag, title), note_ids in notes.items():
+            note_dir = note_path / tag
 
-            os.makedirs(base_path, exist_ok=True)
-            for i, note in enumerate(note_set):
+            os.makedirs(note_dir, exist_ok=True)
+            for i, note_id in enumerate(note_ids):
+                note = id_to_raw_note[note_id]
                 text = note.text
 
                 if i == 0:
@@ -110,13 +133,11 @@ class BearDB:
                     suffix = f"_{i}"
 
                 file_name = f"{note.title.replace('/', '_')}{suffix}.md"
-                file_path = base_path / file_name
+                file_path = note_dir / file_name
 
                 if not file_path.exists() or overwrite:
-                    with open(file_path, "w") as f:
-                        print(f"Writing {file_path}")
-                        f.write(text)
-                        notes_synced += 1
+                    os.link(note.raw_path, file_path)
+                    notes_synced += 1
                 else:
                     print(f"{file_path} already exists. Skipping.")
                     notes_skipped += 1
@@ -127,7 +148,7 @@ class BearDB:
         notes = self.raw_notes()
         return [note for note in notes if note[2] == 0]
 
-    def dissconnect(self):
+    def disconnect(self):
         self.con.close()
 
 
@@ -145,4 +166,4 @@ def sync(
     # Connect to Bear database
     db = BearDB(db_path)
     db.save_notes(Path(output_path), overwrite)
-    db.dissconnect()
+    db.disconnect()
