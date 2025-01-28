@@ -58,7 +58,7 @@ class BearDB:
         query = """
         SELECT
             Z_5TAGS.Z_5NOTES AS note_id,
-            ZSFNOTETAG.ZTITLE AS tag,
+            ZSFNOTETAG.ZTITLE AS tag
         FROM
             Z_5TAGS
         LEFT JOIN
@@ -96,8 +96,8 @@ class BearDB:
                     f.write(text)
                 id_to_raw_note[note_id] = RawNote(
                     raw_path=note_path,
-                    title=title,
-                    text=text or "untitled",
+                    title=title.removeprefix(".") or "untitled",
+                    text=text,
                     creation_date=self.__core_date_time_to_datetime(creation_date),
                     modification_date=self.__core_date_time_to_datetime(
                         modification_date
@@ -114,13 +114,15 @@ class BearDB:
         # group notes by tag and title
         notes = defaultdict(list)
         for note_id, tag in raw_tags + untagged_notes:
-            notes[(tag, title)].append(note_id)
+            # ignore trashed notes
+            if note_id in id_to_raw_note:
+                notes[(tag, title)].append(note_id)
 
         # notes with the same tag and title are ordered by creation date
         notes_synced = 0
         notes_skipped = 0
         for (tag, title), note_ids in notes.items():
-            note_dir = note_path / tag
+            note_dir = base_path / tag
 
             os.makedirs(note_dir, exist_ok=True)
             for i, note_id in enumerate(note_ids):
