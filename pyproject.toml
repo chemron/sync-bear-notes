@@ -7,7 +7,7 @@ find = {}
 
 [project]
 name = "bear-sync"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
     "click>=8.1.8",
     'importlib-metadata; python_version>="3.12"',
@@ -19,7 +19,7 @@ readme="README.md"
 bear-sync = "bear_sync.main:main"
 
 [tool.bumpver]
-current_version = "0.0.1"
+current_version = "0.1.0"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
