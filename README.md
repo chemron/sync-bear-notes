@@ -43,6 +43,8 @@ then the resulting directory structure will be:
 
 ```text
 bear_sync_folder/
+├── .raw_notes/
+|   ├── 1.md
 ├── tag/
 |   ├── My Bear Document.md
 │   ├── subtag/
@@ -50,6 +52,8 @@ bear_sync_folder/
 ├── tag2/
 |   ├── My Bear Document.md
 ```
+
+Note: only the file under `.raw_notes/` stores data, the remaining files are [hard links](https://en.wikipedia.org/wiki/Hard_link) to the original file.
 
 ## Example - using bear-sync with git
 
