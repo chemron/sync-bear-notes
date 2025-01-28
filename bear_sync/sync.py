@@ -77,6 +77,8 @@ class BearDB:
         raw_notes = self.raw_notes()
         raw_tags = self.raw_tags()
         raw_note_dir = base_path / ".raw_notes"
+        notes_synced = 0
+        notes_skipped = 0
         os.makedirs(raw_note_dir, exist_ok=True)
 
         id_to_raw_note = {}
@@ -91,7 +93,11 @@ class BearDB:
             if trashed or (not text):
                 continue
             note_path = raw_note_dir / f"{note_id}.md"
-            if not note_path.exists() or overwrite:
+            if note_path.exists() and not overwrite:
+                print(f"{note_path} already exists. Skipping.")
+                notes_skipped += 1
+                continue
+            else:
                 with open(note_path, "w") as f:
                     f.write(text)
                 id_to_raw_note[note_id] = RawNote(
@@ -106,21 +112,18 @@ class BearDB:
 
         tagged_notes = {note_id for note_id, _ in raw_tags}
         untagged_notes = [
-            (note_id, "untagged")
-            for note_id in id_to_raw_note
-            if note_id not in tagged_notes
+            (note_id, "") for note_id in id_to_raw_note if note_id not in tagged_notes
         ]
 
         # group notes by tag and title
         notes = defaultdict(list)
         for note_id, tag in raw_tags + untagged_notes:
+            tag = tag.removeprefix(".") or "untagged"
             # ignore trashed notes
             if note_id in id_to_raw_note:
                 notes[(tag, title)].append(note_id)
 
         # notes with the same tag and title are ordered by creation date
-        notes_synced = 0
-        notes_skipped = 0
         for (tag, title), note_ids in notes.items():
             note_dir = base_path / tag
 
@@ -137,12 +140,15 @@ class BearDB:
                 file_name = f"{note.title.replace('/', '_')}{suffix}.md"
                 file_path = note_dir / file_name
 
-                if not file_path.exists() or overwrite:
-                    os.link(note.raw_path, file_path)
-                    notes_synced += 1
-                else:
-                    print(f"{file_path} already exists. Skipping.")
-                    notes_skipped += 1
+                if file_path.exists():
+                    if overwrite:
+                        os.remove(file_path)
+                    else:
+                        print(f"{file_path} already exists. Skipping.")
+                        notes_skipped += 1
+                        continue
+                os.link(note.raw_path, file_path)
+                notes_synced += 1
 
         print(f"Synced {notes_synced} notes. Skipped {notes_skipped} notes.")
 
